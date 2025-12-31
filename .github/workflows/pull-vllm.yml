@@ -1,21 +1,39 @@
-name: Pull and Push vLLM Image
+name: Pull and Push vLLM Nightly Image
 
 on:
   workflow_dispatch:  # 手动触发
 
 jobs:
-  build:
+  push-to-acr:
     runs-on: ubuntu-latest
     steps:
+      # 第一步：最大化释放磁盘空间（关键！）
+      - name: Maximize Disk Space
+        uses: easimon/maximize-build-space@master
+        with:
+          remove-dotnet: 'true'
+          remove-android: 'true'
+          remove-haskell: 'true'
+          remove-codeql: 'true'
+          remove-docker-images: 'true'
+
+      # 第二步：登录阿里云 ACR
       - name: Login to Aliyun ACR
         uses: aliyun/acr-login@v1
         with:
           login-server: https://registry.cn-hangzhou.aliyuncs.com
           username: "${{ secrets.ACR_USERNAME }}"
           password: "${{ secrets.ACR_PASSWORD }}"
-      
-      - name: Pull and Push Image
+
+      # 第三步：拉取、tag 并推送
+      - name: Pull, Tag and Push vLLM Image
         run: |
           docker pull vllm/vllm-openai:nightly
           docker tag vllm/vllm-openai:nightly registry.cn-hangzhou.aliyuncs.com/htrsy/vllm-openai:nightly
           docker push registry.cn-hangzhou.aliyuncs.com/htrsy/vllm-openai:nightly
+
+      # （可选）最后再清理一下，避免下次跑残留
+      - name: Cleanup Docker
+        if: always()
+        run: |
+          docker system prune -af
