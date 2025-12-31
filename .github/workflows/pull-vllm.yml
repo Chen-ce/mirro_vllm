@@ -1,0 +1,21 @@
+name: Pull and Push vLLM Image
+
+on:
+  workflow_dispatch:  # 手动触发
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Login to Aliyun ACR
+        uses: aliyun/acr-login@v1
+        with:
+          login-server: https://registry.cn-hangzhou.aliyuncs.com
+          username: "${{ secrets.ACR_USERNAME }}"
+          password: "${{ secrets.ACR_PASSWORD }}"
+      
+      - name: Pull and Push Image
+        run: |
+          docker pull vllm/vllm-openai:nightly
+          docker tag vllm/vllm-openai:nightly registry.cn-hangzhou.aliyuncs.com/htrsy/vllm-openai:nightly
+          docker push registry.cn-hangzhou.aliyuncs.com/htrsy/vllm-openai:nightly
